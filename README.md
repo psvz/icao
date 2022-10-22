@@ -1,31 +1,34 @@
-# ICAO Master list and biometric Document signing Certificates: finding, extraction, and trust chain verification
-I offer two python scripts for finding signing certificates and extraction thereof from ICAO Public Key Infrastructure (PKI). In lieu of documentation an example with sufficient comments demonstrates intended workflow.
+### ICAO Master List and Document Signing Certificates: finding, extraction, and trust chain verification
+[International Civil Aviation Organization](https://en.wikipedia.org/wiki/International_Civil_Aviation_Organization) (ICAO) maintains a Public Key Infrastructure (PKI) suitable for independent verification of Machine Readable Travel Document (MRTD) i.e., [biometric passports and some national identity cards](https://en.wikipedia.org/wiki/Biometric_passport). Requirements the PKI aims at are set out in [Doc Series 9303](https://www.icao.int/publications/pages/publication.aspx?docnum=9303). Essentially, it is two-level x509-certificates-based chain of trust, where an ICAO Master List holds root authorities and a document signing certificate list holds intermediaries.
+
+Here, I offer a couple of scripts to locate and extract signing certificates from ICAO lists. In lieu of documentation an example with sufficient comments demonstrates intended workflow.
 
 The scripts rely on `openssl` binary (version 3.0.2/Linux in tests). At the time of writing, pythonic closest `cryptography` module does not unfortunately cover sought functionality. Interestingly, `openssl` binary (version 1.1.1q/Windows) produces incorrect output at a step of `CMS` payload extraction, and the difference can be observed in number of bytes out. Hence, this solution is not Windows-portable.
 
-The rationale behind this work was to identify the shortest cryptographic non-personally identifiable proof-of-citizenship that can be independently verified. Biometric passports offer such proof in form of passport data' hash signed by a document signer (DS) certificate. Such **hash + the signature + DS fingerprint** (20 bytes) could represent our target sequence.
+The rationale behind this work was to identify the shortest auditable-yet-not personally identifiable proof-of-citizenship that can be independently verified. Biometric passports offer such proof in form of passport data' hash signed by a document signer (DS) certificate. Such **hash + the signature + DS fingerprint** (20 bytes) could represent our target sequence.
 
 There are lots of DS's in circulation. A DS signing window would normally last three months. So, a cohort of passports (re)issued in a country every three months would have their associated cohort of DS's split by issuing department. Assuming 10 years' passport validity you could have an idea how many DS's should stay on the PKI.
 
 DS's themselves are signed by Country Signing Certificate Authority (CSCA). Those are a handful of long players - members of ICAO master list. As they are trust anchors, they are a better fit in our *"independent verification"* bit, yet a worse choice for *"the shortest"* requirement, because our target sequence becomes **hash + its signature + full DS certificate**. Assuming compliance of the latter, it has embedded reference to CSCA (as we will see below).
 
-In reality, a DS could go astray or not be having a reference to CSCA, which leave us with the "shortest" reliable option as **hash + its signature + full DS certificate + CSCA fingerprint**. Since biometric passports aren't ubiquitous at present, it is hard to envision anything on a scale that would utilize proposed approach, unless... couldn't our sequence of bytes replace physical document altogether?
-### Getting hands dirty
-Let's take an ePassport, or, in ICAO 9309 terminology, Machine Readable Travel Document (MRTD). A modern mobile phone has near-field communication hardware (NFC chip) capable of reading it. The fanciest app I know of is [ReadID Me – Apps on Google Play](https://play.google.com/store/apps/details?id=nl.innovalor.nfciddocshowcase) - alternatively searchable in *App Store*. This app gives away both certificates of interest, however it holds back signatures of document data. There are a couple of projects aiming at reading API, they could help to get hold of the full dataset:
+In reality, a DS could go astray or not be having a reference to CSCA, which leave us with the "shortest" reliable option as **hash + its signature + full DS certificate + CSCA fingerprint**. Since biometric passports aren't ubiquitous at present, it is hard to envision anything on a scale that would utilize proposed approach, unless... Could a similar construct be good enough to replace physical documents altogether?
+#### Getting hands dirty
+Let's scan a British ePassport. A modern mobile phone has near-field communication (NFC) capability. The fanciest app I know of is [ReadID Me – Apps on Google Play](https://play.google.com/store/apps/details?id=nl.innovalor.nfciddocshowcase) - alternatively searchable in *App Store*. This app gives away both certificates of interest, however it holds back signatures of document data. There are a couple of projects aiming at reading API, they could help to get hold of the full dataset:
 
  - [AndyQ/NFCPassportReader: NFCPassportReader for iOS 13   
    (github.com)](https://github.com/AndyQ/NFCPassportReader)   
  - [PassID-Server/src/pymrtd at master · ZeroPass/PassID-Server   
    (github.com)](https://github.com/ZeroPass/PassID-Server/tree/master/src/pymrtd)
 
-*ReadID Me* first scans MRZ to extract its digits that are used as a "password" to read NFC chip. This is an intentionally weak measure to just ensure the reading isn't done in pickpocket fashion. After the reading completes Security tab of the app will contain Document signing certificate's Serial number and thumbprint (aka fingerprint).
+*ReadID Me* first scans MRZ to extract its digits that are used as a "password" to read NFC chip. This is an intentionally weak measure to just ensure the reading isn't done in pickpocket fashion. After the reading completes security tab of the app will contain document signing certificate's serial number and thumbprint (aka fingerprint).
 
-In your clone of this repository, you may wish to update the following ICAO data stores:
+In your clone of this repository, you may wish to update the following ICAO data files:
 > icaopkd-001-dsccrl-005973.ldif
-> icaopkd-002-ml-000216.ldif
+icaopkd-002-ml-000216.ldif
 
 by solving CAPTCHA at the bottom of https://pkddownloadsg.icao.int/download
-Although I use Serial in this example - I am just lucky: serials aren't unique and can easily produce irrelevant findings; instead, use fingerprint - punch in the characters without spaces. It works similar to `grep`:
+
+Although I use Serial in this example - I am just lucky: serials aren't unique and can easily produce irrelevant findings; instead, use fingerprint - punch in its characters without spaces. It works similar to `grep`:
 
     source bin/activate
     # ^ unless you prefer own environment
@@ -117,14 +120,14 @@ There are three observations worth making. First of all, this certificate sports
     ls CSCA/499E4730278520C57CFC118024E14C1562A249D6/
     0B18BB2A46781109AB8DB3C971F9ACB4FB64CE95.pem  8B685C03B33A0CFF4CBCE1324F1D4FC088173708.pem
 
-Here we have two CSCA containing the same public key. The difference is that one is self-signed, while the other is cross signed. Since the public key is the same, we can use either certificate to verify DSCA (Document signer) above. If curious, you can match CSCA fingerprints found by the script against the one stored in your passport's chip (reported by *ReadID Me* app).
+Here we have two CSCA containing the same public key. The difference is that one CSCA is self-signed, while the other is cross signed (by a peer CSCA). Since the public key is the same, we can use either certificate to verify DSCA (Document signer) above. If curious, you can match CSCA fingerprints found by the script against the one stored in your passport's chip (reported by *ReadID Me* app).
 
 Next, we verify that the document signer bears a valid CSCA signature, that is, the chain of trust propagates from the root (CSCA) to the intermediary (DSCA). For convenience we copy and rename certificates retrieved in the exercise above to
 
     example/ds.pem # document signer
     example/cs.pem # country signer
     cd example
-The meaning of line options can be deduced from respective man pages e.g., `man openssl-asn1parse`. We use the fact that DS is signed with `sha256` in the last command:
+The meaning of the following line options can be deduced from respective man pages e.g., `man openssl-asn1parse`. We use the fact that DS is signed with `sha256` in the last command:
 
     # extracting public key of the root authority :
     openssl x509 -in cs.pem -pubkey -noout >cs.pkey
@@ -138,7 +141,7 @@ The meaning of line options can be deduced from respective man pages e.g., `man 
     # verifying the signature of the body with the public key :
     openssl dgst -sha256 -verify cs.pkey -signature ds.sig ds.body
     Verified OK
-#### TODO 
- - Extend the process onto document's data, DG1 (hashed MRZ) would suffice for that matter
+#### TODO
+- Read NFC to extend the trust chain onto document's data e.g., DG1 (hashed MRZ)
 
-*To be continued...*
+Proud users of [D-Logic Readers](https://www.d-logic.com/nfc-rfid-reader-sdk/software/epassport-reading-machine-readable-travel-documents-mrtd/) or equivalent are sought - your help would be appreciated!
