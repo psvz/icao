@@ -1,9 +1,9 @@
 dn: cn=CN\=United Nations CSCA\,OU\=Certification Authorities\,O\=United Nat
 CMS extraction: 536150 bytes in - 532482 bytes out
 CMS Verification failure
-802BE9F64F7F0000:error:02000068:rsa routines:ossl_rsa_verify:bad signature:../crypto/rsa/rsa_sign.c:430:
-802BE9F64F7F0000:error:1C880004:Provider routines:rsa_verify:RSA lib:../providers/implementations/signature/rsa_sig.c:774:
-802BE9F64F7F0000:error:1700009E:CMS routines:CMS_SignerInfo_verify:verification failure:../crypto/cms/cms_sd.c:899:
+80DB01C6DF7F0000:error:02000068:rsa routines:ossl_rsa_verify:bad signature:../crypto/rsa/rsa_sign.c:430:
+80DB01C6DF7F0000:error:1C880004:Provider routines:rsa_verify:RSA lib:../providers/implementations/signature/rsa_sig.c:774:
+80DB01C6DF7F0000:error:1700009E:CMS routines:CMS_SignerInfo_verify:verification failure:../crypto/cms/cms_sd.c:899:
 355 certificates are on the list...
 
 10077
