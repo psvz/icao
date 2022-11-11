@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/555490373.svg)](https://zenodo.org/badge/latestdoi/555490373)
 ### ICAO Master List and Document Signing Certificates: finding, extraction, and trust chain verification
 [International Civil Aviation Organization](https://en.wikipedia.org/wiki/International_Civil_Aviation_Organization) (ICAO) maintains a Public Key Infrastructure (PKI) suitable for independent verification of Machine Readable Travel Document (MRTD) i.e., [biometric passports and some national identity cards](https://en.wikipedia.org/wiki/Biometric_passport). Requirements the PKI aims at are set out in [Doc Series 9303](https://www.icao.int/publications/pages/publication.aspx?docnum=9303). Essentially, it is two-level x509-certificates-based chain of trust, where an ICAO Master List holds root authorities and a document signing certificate list holds intermediaries.
 
